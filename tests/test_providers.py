@@ -19,10 +19,13 @@ def _cfg(provider: str = "openrouter", api_key: str | None = "k") -> AIConfig:
     return AIConfig(provider=provider, model="m", base_url=None, api_key=api_key)
 
 
-def _mock_response(payload: dict) -> MagicMock:
+def _mock_response(payload: dict, usage: dict | None = None) -> MagicMock:
     resp = MagicMock()
     resp.raise_for_status.return_value = None
-    resp.json.return_value = {"choices": [{"message": {"content": json.dumps(payload)}}]}
+    body: dict = {"choices": [{"message": {"content": json.dumps(payload)}}]}
+    if usage is not None:
+        body["usage"] = usage
+    resp.json.return_value = body
     return resp
 
 
@@ -63,6 +66,35 @@ def test_provider_parses_successful_response() -> None:
         result = get_provider(_cfg()).review("diff", [])
     assert result.risk is RiskLevel.HIGH
     assert result.findings[0].title == "X"
+
+
+def test_provider_captures_usage_tokens() -> None:
+    payload = {"summary": "ok", "risk": "Low", "findings": []}
+    usage = {"prompt_tokens": 800, "completion_tokens": 200, "total_tokens": 1000}
+    with patch(
+        "devguard.ai_client.openai_compatible.httpx.post",
+        return_value=_mock_response(payload, usage=usage),
+    ):
+        result = get_provider(_cfg()).review("diff", [])
+    assert result.usage is not None
+    assert result.usage.prompt_tokens == 800
+    assert result.usage.completion_tokens == 200
+    assert result.usage.total_tokens == 1000
+    assert result.usage.model == "m"
+    assert result.usage.latency_ms >= 0
+    # The provider does not price the call; that's the reviewer's job.
+    assert result.usage.estimated_cost_usd is None
+
+
+def test_provider_usage_defaults_when_absent() -> None:
+    # A response with no usage block still yields a UsageStats (zeroed tokens).
+    payload = {"summary": "ok", "risk": "Low", "findings": []}
+    with patch(
+        "devguard.ai_client.openai_compatible.httpx.post", return_value=_mock_response(payload)
+    ):
+        result = get_provider(_cfg()).review("diff", [])
+    assert result.usage is not None
+    assert result.usage.total_tokens == 0
 
 
 def test_http_error_becomes_provider_error() -> None:

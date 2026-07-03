@@ -83,9 +83,9 @@ project root/
 
 ### Phase 2 — Enhanced Review Features (in progress, 2026-07-03)
 - [x] `.devguard.toml` repo config — tunable `min_severity` + `ignore_paths` review policy, plus optional `[ai] model` (`devguard/config.py`, `devguard/policy.py`; filter wired into `reviewer.py` before risk scoring)
+- [x] Cost/latency logging per review call — providers capture tokens + latency into `ReviewResult.usage`; `reviewer.py` prices the call via `devguard/pricing.py` (built-in table + optional `[pricing]` toml overrides) and logs it; `comment.py` renders a footer line
 - [ ] `/describe` — auto-generated PR summary/description
 - [ ] Fix suggestions (committable code suggestions, not auto-applied)
-- [ ] Cost/latency logging per review call
 
 > Update this list as tasks complete. Move done items to the Decisions/Completed log below.
 
@@ -183,6 +183,8 @@ Registry: `ai_client/registry.py`. To add a new provider, implement the interfac
 | 2026-07-03 | Eval corpus expanded 6 → 12 cases; mock baseline precision 1.00 / recall 0.73 / F1 0.84 | Added a multi-bug diff, a `pickle` case (exercises a previously-uncovered detector), an f-string SQL case, benign/near-miss clean cases guarding precision, and os.system/yaml.load categories the mock deliberately can't catch (guaranteed FNs). `tests/test_eval.py` locks a per-case (tp,fp,fn) map so drift names the culprit. Corpus is now large enough to consider wiring a CI `--fail-under` gate. |
 | 2026-07-03 | `.devguard.toml` config precedence = defaults < toml < env | Repo file sets team-wide policy; per-run env/CI secrets must be able to override it. API keys never read from the toml (env-only) to keep the committed file safe. Uses stdlib `tomllib` (py≥3.11) — no new dependency. |
 | 2026-07-03 | Review policy filters findings *before* risk scoring | `apply_policy` runs in `reviewer.py` between the AI call and `heuristic_risk`, so `min_severity`/`ignore_paths` findings neither reach the PR comment nor inflate the risk level. `min_severity="info"` + no `ignore_paths` = default = zero behaviour change. |
+| 2026-07-04 | Cost/latency: provider captures tokens+latency, reviewer prices it | The provider (`openai_compatible.py`) only records raw tokens + measured latency into `ReviewResult.usage`; the reviewer applies the pricing table because that's where the full `Config` (with `[pricing]` overrides) lives — keeps providers dependency-free. |
+| 2026-07-04 | Pricing = hybrid hardcoded table + optional `[pricing]` toml override | `pricing.py` ships prices for common models (USD per 1M tokens, input/output billed separately); repo can override/extend via `[pricing]`. Unknown model → cost `None` → "cost unknown" rather than a wrong number. |
 
 ---
 
