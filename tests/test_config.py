@@ -75,6 +75,34 @@ def test_ignore_paths_must_be_string_list(tmp_path: Path) -> None:
         load_config(config_path=path)
 
 
+def test_pricing_override_parsed(tmp_path: Path) -> None:
+    path = _write_toml(
+        tmp_path,
+        '[pricing]\n"openai/gpt-4o-mini" = [1.0, 2.0]\n"local/model" = [0, 0]\n',
+    )
+    cfg = load_config(config_path=path)
+    assert cfg.pricing_overrides["openai/gpt-4o-mini"] == (1.0, 2.0)
+    assert cfg.pricing_overrides["local/model"] == (0.0, 0.0)
+
+
+def test_missing_pricing_is_empty(tmp_path: Path) -> None:
+    cfg = load_config(config_path=tmp_path / ".devguard.toml")
+    assert cfg.pricing_overrides == {}
+
+
+def test_bad_pricing_shape_raises(tmp_path: Path) -> None:
+    # Three numbers instead of [input, output].
+    path = _write_toml(tmp_path, '[pricing]\n"m" = [1, 2, 3]\n')
+    with pytest.raises(ConfigError):
+        load_config(config_path=path)
+
+
+def test_pricing_non_numeric_raises(tmp_path: Path) -> None:
+    path = _write_toml(tmp_path, '[pricing]\n"m" = ["a", "b"]\n')
+    with pytest.raises(ConfigError):
+        load_config(config_path=path)
+
+
 def test_env_overrides_provider(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("AI_PROVIDER", "Ollama")
     monkeypatch.setenv("AI_MODEL", "llama3.1")
