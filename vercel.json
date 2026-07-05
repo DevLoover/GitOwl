@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd playground/web && npm install && npm run build",
+  "outputDirectory": "playground/web/dist",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/review" },
+    { "source": "/(.*)", "destination": "/$1" }
+  ]
+}

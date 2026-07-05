@@ -1,4 +1,4 @@
-﻿"""Playground API: review a pasted diff with GitOwl's AI-only review path.
+"""Playground API: review a pasted diff with GitOwl's AI-only review path.
 
 A Vercel Python serverless function — this module's ``app`` is the entry
 point Vercel maps to ``/api/review``. Deliberately thin: it reuses
@@ -11,6 +11,12 @@ from __future__ import annotations
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
+import os
+import sys
+
+# Allow Vercel to find the gitowl package in the root directory
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from gitowl.ai_client.base import AIProviderError
 from gitowl.config import ConfigError, load_config
