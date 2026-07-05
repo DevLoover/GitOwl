@@ -21,11 +21,21 @@ _SEVERITY_ICON = {
 COMMENT_MARKER = "<!-- gitowl-review -->"
 
 # Branded header shown at the top of every PR comment (mirrors CodeRabbit style).
-_HEADER = (
-    """## <a href="https://github.com/MarutiDubey/GitOwl">"""
-    """<img src="https://raw.githubusercontent.com/MarutiDubey/GitOwl/main/docs/logo.svg" """
-    """height="40" style="vertical-align: middle" alt="GitOwl" /></a>"""
-    """ GitOwl Review"""
+_HEADER = "\n".join(
+    [
+        '<div align="center">',
+        "",
+        '<a href="https://github.com/MarutiDubey/GitOwl">',
+        '<img src="https://raw.githubusercontent.com/MarutiDubey/GitOwl/main/docs/logo.svg"',
+        '     height="52" alt="GitOwl" />',
+        "</a>",
+        "",
+        "## GitOwl Review",
+        "",
+        "</div>",
+        "",
+        "---",
+    ]
 )
 
 
@@ -70,7 +80,6 @@ def render_comment(result: ReviewResult, stats: DiffStats) -> str:
     lines: list[str] = [
         COMMENT_MARKER,
         _HEADER,
-        "",
         f"**Risk:** {_RISK_BADGE.get(result.risk, result.risk.value)}  ·  "
         f"**Files changed:** {stats.files_changed}  ·  "
         f"**Lines:** +{stats.added_lines}/-{stats.removed_lines}",
