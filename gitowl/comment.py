@@ -43,24 +43,26 @@ def _finding_line(f: Finding) -> str:
 
 def render_error_comment(error_msg: str) -> str:
     """Build a branded error comment so API failures are visible on the PR."""
-    return "\n".join([
-        COMMENT_MARKER,
-        _HEADER,
-        "",
-        "---",
-        "",
-        "⚠️ **GitOwl could not complete the review.**",
-        "",
-        f"**Error:** `{error_msg}`",
-        "",
-        "**Common fixes:**",
-        "- Check that `AI_API_KEY` is set in *Settings → Secrets and variables → Actions*.",
-        "- Verify your API key is valid and has sufficient credits.",
-        "- Check the [Actions log](../../actions) for the full error trace.",
-        "",
-        "---",
-        "_[GitOwl](https://github.com/MarutiDubey/GitOwl) · open an issue if this persists_",
-    ])
+    return "\n".join(
+        [
+            COMMENT_MARKER,
+            _HEADER,
+            "",
+            "---",
+            "",
+            "⚠️ **GitOwl could not complete the review.**",
+            "",
+            f"**Error:** `{error_msg}`",
+            "",
+            "**Common fixes:**",
+            "- Check that `AI_API_KEY` is set in *Settings → Secrets and variables → Actions*.",
+            "- Verify your API key is valid and has sufficient credits.",
+            "- Check the [Actions log](../../actions) for the full error trace.",
+            "",
+            "---",
+            "_[GitOwl](https://github.com/MarutiDubey/GitOwl) · open an issue if this persists_",
+        ]
+    )
 
 
 def render_comment(result: ReviewResult, stats: DiffStats) -> str:

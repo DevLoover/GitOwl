@@ -89,12 +89,20 @@ def cmd_review_pr(args: argparse.Namespace, config: Config) -> int:
     if not config.github_token:
         raise ConfigError("GITHUB_TOKEN is required for review-pr.")
     client = GitHubClient(config.github_token)
+
+    # Fetch PR head SHA for Check Run (best-effort — don't fail if it errors).
+    pr_sha: str | None = None
+    try:
+        pr_sha = client.fetch_pr_sha(args.repo, args.pr)
+    except GitHubError as exc:
+        logger.warning("Could not fetch PR SHA (Check Run skipped): %s", exc)
+
     try:
         diff_text = client.fetch_pr_diff(args.repo, args.pr)
     except GitHubError as exc:
         logger.error("%s", exc)
         if args.post:
-            _post_error(client, args, f"GitHub API error: {exc}")
+            _post_error(client, args, pr_sha, f"GitHub API error: {exc}")
         return 2
 
     if not diff_text.strip():
@@ -106,7 +114,7 @@ def cmd_review_pr(args: argparse.Namespace, config: Config) -> int:
         except AIProviderError as exc:
             logger.error("AI provider error: %s", exc)
             if args.post:
-                _post_error(client, args, str(exc))
+                _post_error(client, args, pr_sha, str(exc))
             return 3
 
     body = render_comment(review.result, review.stats)
@@ -123,21 +131,84 @@ def cmd_review_pr(args: argparse.Namespace, config: Config) -> int:
         except GitHubError as exc:
             logger.error("%s", exc)
             return 2
+
+        # Post a Check Run so the risk badge appears in the PR Checks section.
+        # Clicking "Details" opens this panel with the full review.
+        if pr_sha:
+            _post_check_run_best_effort(client, args.repo, pr_sha, review.result, body)
     else:
         print(body)
     return 0
 
 
-def _post_error(client: object, args: argparse.Namespace, msg: str) -> None:
-    """Best-effort: post a branded error comment on the PR so it's visible."""
-    from gitowl.github_client import GitHubClient, GitHubError
+def _risk_conclusion(result: object) -> str:
+    """Map RiskLevel → GitHub Check Run conclusion string."""
+    from gitowl.models import ReviewResult, RiskLevel
 
-    assert isinstance(client, GitHubClient)
+    assert isinstance(result, ReviewResult)
+    mapping = {
+        RiskLevel.LOW: "success",
+        RiskLevel.MEDIUM: "neutral",
+        RiskLevel.HIGH: "failure",
+    }
+    return mapping.get(result.risk, "neutral")
+
+
+def _check_title(result: object) -> str:
+    """One-line title shown in the Checks panel header."""
+    from gitowl.models import ReviewResult
+
+    assert isinstance(result, ReviewResult)
+    n = len(result.findings)
+    risk = result.risk.value
+    issues = f"{n} finding{'s' if n != 1 else ''}" if n else "No issues"
+    return f"Risk: {risk} · {issues}"
+
+
+def _post_check_run_best_effort(
+    client: object,
+    repo: str,
+    sha: str,
+    result: object,
+    body: str,
+) -> None:
+    """Best-effort Check Run post — swallows errors so review always succeeds."""
+    from gitowl.github_client import GitHubError
+
     try:
-        client.post_or_update_comment(args.repo, args.pr, render_error_comment(msg))
+        client.post_check_run(  # type: ignore[attr-defined]
+            repo=repo,
+            sha=sha,
+            conclusion=_risk_conclusion(result),  # type: ignore[arg-type]
+            title=_check_title(result),
+            summary=body,  # full Markdown review shown in Details panel
+        )
+        print("Posted GitOwl check run.")
+    except GitHubError as exc:
+        logger.warning("Check Run post failed (non-fatal): %s", exc)
+
+
+def _post_error(client: object, args: argparse.Namespace, pr_sha: str | None, msg: str) -> None:
+    """Best-effort: post a branded error comment on the PR so it's visible."""
+    from gitowl.github_client import GitHubError
+
+    try:
+        client.post_or_update_comment(args.repo, args.pr, render_error_comment(msg))  # type: ignore[attr-defined]
     except GitHubError:
         pass  # swallow — we're already in an error path
 
+    # Also post a failing check run so the Checks section shows the error.
+    if pr_sha:
+        try:
+            client.post_check_run(  # type: ignore[attr-defined]
+                repo=args.repo,
+                sha=pr_sha,
+                conclusion="failure",
+                title="GitOwl Review failed",
+                summary=render_error_comment(msg),
+            )
+        except GitHubError:
+            pass
 
 
 def cmd_describe_diff(args: argparse.Namespace, config: Config) -> int:

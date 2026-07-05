@@ -1,4 +1,4 @@
-﻿"""Minimal GitHub REST client for fetching PR diffs and posting comments."""
+"""Minimal GitHub REST client for fetching PR diffs and posting comments."""
 
 from __future__ import annotations
 
@@ -128,3 +128,46 @@ class GitHubClient:
         except httpx.HTTPError as exc:
             raise GitHubError(f"failed to post PR comment: {exc}") from exc
         logger.info("Posted GitOwl review to %s#%d", repo, pr_number)
+
+    def fetch_pr_sha(self, repo: str, pr_number: int) -> str:
+        """Return the head commit SHA for ``owner/repo`` PR ``pr_number``."""
+        url = f"{self._api_root}/repos/{repo}/pulls/{pr_number}"
+        try:
+            resp = httpx.get(url, headers=self._headers(), timeout=_TIMEOUT)
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise GitHubError(f"failed to fetch PR metadata: {exc}") from exc
+        return resp.json()["head"]["sha"]
+
+    def post_check_run(
+        self,
+        repo: str,
+        sha: str,
+        conclusion: str,
+        title: str,
+        summary: str,
+    ) -> None:
+        """Create a completed GitHub Check Run on ``sha``.
+
+        ``conclusion`` must be one of: success | neutral | failure.
+        ``summary`` is Markdown shown in the Check Run details panel
+        (up to 65 535 chars). This is what appears when the user clicks
+        "Details" on the GitOwl check in the PR's Checks section.
+        """
+        url = f"{self._api_root}/repos/{repo}/check-runs"
+        payload = {
+            "name": "🦉 GitOwl Review",
+            "head_sha": sha,
+            "status": "completed",
+            "conclusion": conclusion,
+            "output": {
+                "title": title,
+                "summary": summary,
+            },
+        }
+        try:
+            resp = httpx.post(url, headers=self._headers(), json=payload, timeout=_TIMEOUT)
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise GitHubError(f"failed to post check run: {exc}") from exc
+        logger.info("Posted GitOwl check run (%s) to %s@%s", conclusion, repo, sha[:7])
