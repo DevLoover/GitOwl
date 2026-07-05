@@ -367,6 +367,48 @@ button.secondary {
   font-weight: 600;
 }
 
+/* ── Setup section ── */
+.setup {
+  margin-top: 72px;
+  padding-top: 40px;
+  border-top: 1px solid var(--border);
+}
+
+.setup-steps {
+  margin: 0 0 20px;
+  padding-left: 20px;
+  line-height: 1.9;
+}
+
+.setup-steps code,
+.setup-note code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+.setup-code {
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-h);
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.setup-note {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--text);
+}
+
 footer {
   margin-top: 80px;
   font-size: 13px;

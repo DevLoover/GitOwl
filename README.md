@@ -16,6 +16,22 @@ PR opened → GitHub Action → Semgrep scans diff → AI filters + reasons
 
 ---
 
+## Add GitOwl to your repo (3 steps)
+
+Get automated AI review comments on every pull request:
+
+1. **Copy the workflow** — save [`examples/gitowl-review.yml`](examples/gitowl-review.yml)
+   into your repo at `.github/workflows/gitowl-review.yml`. It runs `pip install gitowl`.
+2. **Add your key** — in your repo, go to *Settings → Secrets and variables → Actions*
+   and add a secret `AI_API_KEY` (your OpenRouter or OpenAI key).
+3. **Open a PR** — GitOwl reviews the diff and posts a comment automatically.
+
+Defaults to OpenRouter + `openai/gpt-4o-mini`. Override with repo *variables*
+`AI_PROVIDER` / `AI_MODEL` / `AI_BASE_URL`. Want static analysis too? Use
+`pip install "gitowl[semgrep]"` in the workflow.
+
+---
+
 ## Quick start (local)
 
 ```bash
