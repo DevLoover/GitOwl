@@ -22,10 +22,10 @@ COMMENT_MARKER = "<!-- gitowl-review -->"
 
 # Branded header shown at the top of every PR comment (mirrors CodeRabbit style).
 _HEADER = (
-    """<a href="https://github.com/MarutiDubey/GitOwl">"""
+    """## <a href="https://github.com/MarutiDubey/GitOwl">"""
     """<img src="https://raw.githubusercontent.com/MarutiDubey/GitOwl/main/docs/logo.svg" """
-    """height="28" alt="GitOwl" /></a> """
-    """**GitOwl Review**"""
+    """height="40" style="vertical-align: middle" alt="GitOwl" /></a>"""
+    """ GitOwl Review"""
 )
 
 
