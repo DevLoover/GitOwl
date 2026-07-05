@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { DiffInput } from "./components/DiffInput";
 import { ReviewOutput } from "./components/ReviewOutput";
+import { Setup } from "./components/Setup";
 import { reviewDiff, ReviewApiError, EXAMPLE_DIFF, type ReviewResponse } from "./api";
 
 function App() {
@@ -82,6 +83,8 @@ function App() {
 
       {error && <div className="error-box">{error}</div>}
       {result && <ReviewOutput result={result} />}
+
+      <Setup />
 
       <footer>
         Diffs are sent to an AI provider for review and are not stored.{" "}

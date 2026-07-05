@@ -6,13 +6,44 @@ build-backend = "setuptools.build_meta"
 name = "gitowl"
 version = "0.1.0"
 description = "AI-assisted code review tool for GitHub pull requests."
-readme = "PROJECT_BRAIN.md"
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "GitOwl maintainers" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "httpx==0.28.1",
+    "python-dotenv==1.0.1",
+    "unidiff==0.7.5",
+]
+
+[project.optional-dependencies]
+# Static analysis is runtime-auto-detected (gitowl.semgrep_runner.is_available());
+# skip this extra for a fast, AI-review-only install.
+semgrep = ["semgrep==1.97.0"]
+
+[project.scripts]
+gitowl = "gitowl.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/MarutiDubey/GitOwl"
+Repository = "https://github.com/MarutiDubey/GitOwl"
 
 [tool.setuptools.packages.find]
 include = ["gitowl*"]
+
+[tool.setuptools.package-data]
+# The eval harness ships its seeded-bug corpus alongside the code so
+# `python -m gitowl.eval` also works from an installed (not just checked-out) package.
+gitowl = ["eval/cases/*.diff", "eval/cases/*.json"]
 
 [tool.black]
 line-length = 100
